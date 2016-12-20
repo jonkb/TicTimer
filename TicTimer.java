@@ -1,10 +1,21 @@
+/**Main thread for the TicTimer program
+ * Sets up the main window, including the functionality of its buttons.
+ * 
+   Communicating over serial: 
+    //import javax.comm.*;
+    
+    public void serialEvent(SerialPortEvent event) {
+        
+    }
+    //make connection a button instead
+    establish_com();
+ */
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import java.io.*;
 import java.util.*;
-//import javax.comm.*;
 
 public class TicTimer extends Thread implements KeyListener {
     static TicTimer tic_session;
@@ -49,10 +60,6 @@ public class TicTimer extends Thread implements KeyListener {
     static Double d_int = new Double(0);
     static int total_time;
     static Double running_time = new Double(0);
-    /*
-    public void serialEvent(SerialPortEvent event) {
-        
-    }*/
     
     public void setup_main_window(){
         // setup main window
@@ -306,8 +313,6 @@ public class TicTimer extends Thread implements KeyListener {
     
     public void run() {
         setup_main_window();
-        // make connection a button instead
-        // establish_com();
     }
     
     public static void main(String[] args) {

@@ -1,3 +1,5 @@
+/**Panel for the current time. Appears at the top as Clock Time
+ */
 import java.awt.*;
 import javax.swing.*;
 import java.util.*;

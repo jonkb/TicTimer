@@ -1,3 +1,7 @@
+/**Tic-free time panel
+ * Keeps track of time since last tic.
+ * Sends the tenIend event when ten seconds pass without tics
+ */
 import java.awt.*;
 import javax.swing.*;
 import java.util.*;

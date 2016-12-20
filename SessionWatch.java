@@ -1,3 +1,6 @@
+/**The panel for the Session clock. Appears as "Session Running Time: " under Session status.
+ * Keeps track of the session time (sec_elapsed) and sends rewards during NCR
+ */
 import java.awt.*;
 import javax.swing.*;
 import java.util.*;

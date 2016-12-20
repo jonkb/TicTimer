@@ -1,7 +1,6 @@
 #BlueJ class context
 comment0.params=
 comment0.target=void\ setup_main_window()
-comment0.text=\r\n\ \ \ \ public\ void\ serialEvent(SerialPortEvent\ event)\ {\r\n\ \ \ \ \ \ \ \ \r\n}
 comment1.params=e
 comment1.target=void\ actionPerformed(java.awt.event.ActionEvent)
 comment10.params=
