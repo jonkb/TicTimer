@@ -1,8 +1,0 @@
-#BlueJ class context
-comment0.params=
-comment0.target=void\ run()
-comment1.params=i
-comment1.target=java.lang.String\ getDigitsAsString(int)
-comment2.params=cal
-comment2.target=java.lang.String\ getTimeAsString(java.util.Calendar)
-numComments=3

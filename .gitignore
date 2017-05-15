@@ -1,5 +1,6 @@
-# Java
+# Java & blueJ
 *.class
+*.ctxt
 
 # Windows image file caches
 Thumbs.db

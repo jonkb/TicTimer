@@ -1,8 +1,0 @@
-#BlueJ class context
-comment0.params=
-comment0.target=Timestamp()
-comment1.params=h\ m\ s
-comment1.target=Timestamp(int,\ int,\ int)
-comment2.params=
-comment2.target=void\ fillTimes()
-numComments=3
