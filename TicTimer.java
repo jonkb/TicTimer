@@ -1,14 +1,5 @@
 /**Main thread for the TicTimer program
  * Sets up the main window, including the functionality of its buttons.
- * 
-   Communicating over serial: 
-    //import javax.comm.*;
-    
-    public void serialEvent(SerialPortEvent event) {
-        
-    }
-    //make connection a button instead
-    establish_com();
  */
 import java.awt.*;
 import java.awt.event.*;
@@ -16,6 +7,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.io.*;
 import java.util.*;
+import gnu.io.*;//From RXTX
 
 public class TicTimer extends Thread implements KeyListener {
     static TicTimer tic_session;
@@ -41,6 +33,14 @@ public class TicTimer extends Thread implements KeyListener {
     static JTextArea progress_area = new JTextArea();
     static JScrollPane progressscroll = new JScrollPane(progress_area);
     static JFileChooser chooser = new JFileChooser();
+    
+    //Used by COM link
+    final static int TIMEOUT = 2000;
+    final static String appName = "TicTimer_test";
+    final static byte RM_BUTTON = 0;
+    final static byte RM_LINK = 1;
+    static byte reward_mode = RM_LINK;
+    static OutputStream serialStream = null;
     
     static File NCRSource;
     static File log;
@@ -315,9 +315,116 @@ public class TicTimer extends Thread implements KeyListener {
         setup_main_window();
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args){
+        Scanner user_in = new Scanner(System.in);
+        String res;
+        String res1;
+        /*
+         * Insert code from port_test
+         * Establish links and ask about button vs COM
+         */
+        
+        ArrayList<CommPortIdentifier> cpis = listPorts();
+        ArrayList<CommPortIdentifier> serial_cpis = null;
+        CommPortIdentifier targetPI = null;
+        int num_serial_ports = 0;
+        
+        for(CommPortIdentifier cpi: cpis){
+            if(cpi.getPortType() == 1){ //Serial Port
+                num_serial_ports++;
+                serial_cpis.add(cpi);
+                targetPI = cpi;
+            }
+        }
+        if(num_serial_ports == 0){
+            System.out.println("USB serial adapter not detected");
+            System.out.println("Are you using the button instead? (y/n)");
+            res = user_in.next();
+            if(res.equals("y"))
+                reward_mode = RM_BUTTON;
+            else{
+                return;
+            }
+        }
+        else if(num_serial_ports == 1){
+            System.out.println("USB serial adapter detected at "+targetPI.getName());
+            System.out.println("Is this the right port? (y/n)");
+            res = user_in.next().toLowerCase();
+            if(res.equals("n")){
+                System.out.println("Would you like to quit? (y/n)");
+                res1 = user_in.next().toLowerCase();
+                if(res1.equals("y"))
+                    return;
+                System.out.println("Switching to button mode");
+                reward_mode = RM_BUTTON;
+            }
+            //If they typed "y" (or anything alse technically), just continue in LINK mode
+        }
+        else if(num_serial_ports > 1){
+            System.out.println("Multiple serial devices detected:");
+            for(int i=0; i<serial_cpis.size(); i++){
+                System.out.println(i + ": " + serial_cpis.get(i).getName());
+            }
+            System.out.println("Which would you like to use? (type the number displayed before the correct port name)");
+            res = user_in.next();
+            int resI = Integer.parseInt(res);
+            //Not a valid index
+            if(resI < 0 || resI > serial_cpis.size()){
+                System.out.println("Switching to button mode");
+                reward_mode = RM_BUTTON;
+            }
+            else{
+                targetPI = serial_cpis.get(resI);
+            }
+        }
+        //Continue and link
+        if(reward_mode == RM_LINK){
+            //Connect
+            try{
+                SerialPort serialPort = (SerialPort) targetPI.open(appName, TIMEOUT);
+                serialStream = serialPort.getOutputStream();
+                System.out.println("Connection Established");
+            }
+            catch(Exception e){
+                System.out.println("Exception: "+e.toString());
+            }
+        }
+        
+        //Start GUI
         tic_session = new TicTimer();
         tic_session.start();
+    }
+    
+    public static ArrayList<CommPortIdentifier> listPorts(){
+        ArrayList<CommPortIdentifier> cpis = new ArrayList<CommPortIdentifier>();
+        CommPortIdentifier cpi = null;
+        Enumeration ports = CommPortIdentifier.getPortIdentifiers();
+        while(ports.hasMoreElements()){
+            cpi = (CommPortIdentifier) ports.nextElement();
+            cpis.add(cpi);
+            System.out.println("Port Name: "+cpi.getName());
+            String type = "";
+            switch(cpi.getPortType()){
+                //http://www.docjava.com/book/cgij/jdoc/constant-values.html#gnu.io.CommPortIdentifierInterface.PORT_PARALLEL
+                case 1:
+                    type = "Serial Port";
+                    break;
+                case 2:
+                    type = "Parallel Port";
+                    break;
+                case 3:
+                    type = "I2C Port";
+                    break;
+                case 4:
+                    type = "RS385 Port";
+                    break;
+                case 5:
+                    type = "Raw Port";
+                    break;
+            }
+            System.out.println("\tPort Type: "+ type);
+        }
+        return cpis;
     }
     
     public static void endSession(){
@@ -377,7 +484,7 @@ public class TicTimer extends Thread implements KeyListener {
     }
     
     /**
-     * send a reward
+     * Send a reward
      */
     public static void send_reward() {
         if(try_reward()){
@@ -390,7 +497,7 @@ public class TicTimer extends Thread implements KeyListener {
         }
     }
     /**
-     * send a reward. Return true if successful
+     * Send a reward. Return true if successful
      */
     public static boolean try_reward(){
         //Tell the user to press the dispense button
@@ -401,6 +508,14 @@ public class TicTimer extends Thread implements KeyListener {
                     reward_notification_label.setBackground(Color.RED);
                     reward_notification_label.setText("SEND REWARD");
                     java.awt.Toolkit.getDefaultToolkit().beep();
+                    if(reward_mode == RM_LINK){
+                        /* Send a pulse to the serial port (8 bytes long)
+                         * The thing is, it's really probably time-based, 
+                         * so this may need to increase a bit
+                         */
+                        for(int i = 0; i < 8; i++)
+                            serialStream.write(0);
+                    }
                     //Stay red for 0.5s
                     Thread.sleep(500);
                     reward_notification_label.setBackground(Color.WHITE);
@@ -409,8 +524,11 @@ public class TicTimer extends Thread implements KeyListener {
             }
         };
         beep.start();
-        /* Replace this with a function that automatically sends the signal
-        and recieves feedback from the machine */
+        /*
+         * If we ever get feedback from the machine, replace "return true"
+         * with whatever code returns a success or failure boolean
+         * from the machine's sensor
+         */
         return true;
     }
     
