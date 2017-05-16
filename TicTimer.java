@@ -39,7 +39,9 @@ public class TicTimer extends Thread implements KeyListener {
     final static String appName = "TicTimer_test";
     final static byte RM_BUTTON = 0;
     final static byte RM_LINK = 1;
+    static Scanner user_in = new Scanner(System.in);
     static byte reward_mode = RM_LINK;
+    static SerialPort serialPort = null;
     static OutputStream serialStream = null;
     
     static File NCRSource;
@@ -316,16 +318,12 @@ public class TicTimer extends Thread implements KeyListener {
     }
     
     public static void main(String[] args){
-        Scanner user_in = new Scanner(System.in);
-        String res;
-        String res1;
-        /*
-         * Insert code from port_test
+        /* Basic idea from port_test
          * Establish links and ask about button vs COM
          */
         
         ArrayList<CommPortIdentifier> cpis = listPorts();
-        ArrayList<CommPortIdentifier> serial_cpis = null;
+        ArrayList<CommPortIdentifier> serial_cpis = new ArrayList<CommPortIdentifier>();
         CommPortIdentifier targetPI = null;
         int num_serial_ports = 0;
         
@@ -338,27 +336,26 @@ public class TicTimer extends Thread implements KeyListener {
         }
         if(num_serial_ports == 0){
             System.out.println("USB serial adapter not detected");
-            System.out.println("Are you using the button instead? (y/n)");
-            res = user_in.next();
-            if(res.equals("y"))
+            if(boolPrompt("Are you using the button instead?"))
                 reward_mode = RM_BUTTON;
-            else{
+            else/* Quit.
+                 * Actually, I should probably say "plug it in" and scan again
+                 */
                 return;
-            }
         }
         else if(num_serial_ports == 1){
+            /* This should really happen 95% of the time.
+             * The other 4.95%, they probably just forgot to plug it in.
+             */
             System.out.println("USB serial adapter detected at "+targetPI.getName());
-            System.out.println("Is this the right port? (y/n)");
-            res = user_in.next().toLowerCase();
-            if(res.equals("n")){
-                System.out.println("Would you like to quit? (y/n)");
-                res1 = user_in.next().toLowerCase();
-                if(res1.equals("y"))
+            if(!boolPrompt("Is this the right port?")){
+                if(boolPrompt("Would you like to quit?"))
+                    //Again, this could be a "plug it in" prompt
                     return;
                 System.out.println("Switching to button mode");
                 reward_mode = RM_BUTTON;
             }
-            //If they typed "y" (or anything alse technically), just continue in LINK mode
+            //If they typed "y", just continue in LINK mode
         }
         else if(num_serial_ports > 1){
             System.out.println("Multiple serial devices detected:");
@@ -366,7 +363,7 @@ public class TicTimer extends Thread implements KeyListener {
                 System.out.println(i + ": " + serial_cpis.get(i).getName());
             }
             System.out.println("Which would you like to use? (type the number displayed before the correct port name)");
-            res = user_in.next();
+            String res = user_in.next();
             int resI = Integer.parseInt(res);
             //Not a valid index
             if(resI < 0 || resI > serial_cpis.size()){
@@ -381,7 +378,7 @@ public class TicTimer extends Thread implements KeyListener {
         if(reward_mode == RM_LINK){
             //Connect
             try{
-                SerialPort serialPort = (SerialPort) targetPI.open(appName, TIMEOUT);
+                serialPort = (SerialPort) targetPI.open(appName, TIMEOUT);
                 serialStream = serialPort.getOutputStream();
                 System.out.println("Connection Established");
             }
@@ -439,6 +436,16 @@ public class TicTimer extends Thread implements KeyListener {
         progressscroll.getVerticalScrollBar().setValue(TicTimer.progressscroll.getVerticalScrollBar().getMaximum());
         log_stream.println("Session " + TicTimer.session_number + " ended at " + TicTimer.clock_panel.getTimeAsString() + "\n");
         log_stream.close();
+        //Close COM port and stream
+        if(reward_mode == RM_LINK){
+            serialPort.close();
+            try{
+                serialStream.close();
+            }
+            catch(Exception e){
+                System.out.println("Exception: "+e.toString());
+            }
+        }
         //Buttons and Notification
         session_status_panel.setBackground(Color.RED);
         session_status_label.setText("Session status: ended");
@@ -454,7 +461,10 @@ public class TicTimer extends Thread implements KeyListener {
             java.awt.Toolkit.getDefaultToolkit().beep();
             Thread.sleep(250);
             java.awt.Toolkit.getDefaultToolkit().beep();
-        }catch(Exception e){}
+        }
+        catch(Exception e){
+            System.out.println("Exception: "+e.toString());
+        }
     }
     
     public static void tic_detected(){
@@ -520,7 +530,10 @@ public class TicTimer extends Thread implements KeyListener {
                     Thread.sleep(500);
                     reward_notification_label.setBackground(Color.WHITE);
                     reward_notification_label.setText("");
-                }catch(Exception e){}
+                }
+                catch(Exception e){
+                    System.out.println("Exception: "+e.toString());
+                }
             }
         };
         beep.start();
@@ -544,5 +557,19 @@ public class TicTimer extends Thread implements KeyListener {
     }
     public void keyReleased(KeyEvent e) {
         // does nothing
+    }
+    
+    private static boolean boolPrompt(String prompt){
+        String res = "";
+        while(true){
+            System.out.println(prompt + " (y/n)");
+            res = user_in.next().toLowerCase(); //Non-case-sensitive
+            if(res.equals("y"))
+                return true;
+            if(res.equals("n"))
+                return false;
+            System.out.println("Invalid option. Please type 'y' or 'n'.");
+        }
+        //If they typed "y" (or anything alse technically), just continue in LINK mode
     }
 }

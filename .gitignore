@@ -1,3 +1,6 @@
+#TicTimer user log files
+*_TicTimer_log.txt
+
 # Java & blueJ
 *.class
 *.ctxt
