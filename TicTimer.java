@@ -68,7 +68,7 @@ public class TicTimer extends Thread implements KeyListener {
         main_frame.setSize(500,500);
         main_frame.setResizable(false);
         main_frame.getContentPane().setLayout( new FlowLayout(FlowLayout.CENTER,10,10) );
-        // main_frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        main_frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         
         // setup border for panels
         Border etched_border;
@@ -180,11 +180,23 @@ public class TicTimer extends Thread implements KeyListener {
             public void windowClosing(WindowEvent e){
                 if ( session_running ) {
                     exit_button = JOptionPane.showConfirmDialog(main_frame,"Are you sure you want to exit?","Exit?",JOptionPane.OK_CANCEL_OPTION);
-                    if ( exit_button == JOptionPane.OK_OPTION ) {
-                    JOptionPane.showMessageDialog(main_frame,"OK, exiting now","Exiting",JOptionPane.WARNING_MESSAGE);
-                        System.exit(0);
+                    if(exit_button == JOptionPane.CANCEL_OPTION){
+                        return;
                     }
-                } else { System.exit(0); }
+                }
+                //Close COM port and stream
+                if(reward_mode == RM_LINK){
+                    serialPort.close();
+                    try{
+                        serialStream.close();
+                    }
+                    catch(Exception e1){
+                        System.out.println("Exception: "+e1.toString());
+                    }
+                }
+                //Close the window and the program
+                main_frame.dispose();
+                System.exit(0);
             }
         };
         main_frame.addWindowListener(mainL);
@@ -252,7 +264,7 @@ public class TicTimer extends Thread implements KeyListener {
         //Choose DRZ file from which to send the rewards
         if(session_type.equals("NCR")){ //if NCR
             chooser.setDialogTitle("Choose a DRZ file");
-            chooser.setSelectedFile(new File(System.getProperty("user.dir"), patid + "_session" + session_number + "_" + possibleValues[2] + "_TicTimer_log.txt"));
+            chooser.setSelectedFile(new File(System.getProperty("user.dir"), patid + "_session*" + "_" + possibleValues[2] + "_TicTimer_log.txt"));
             while ( true ){
                 try {
                     a9 = chooser.showOpenDialog(main_frame);
@@ -436,16 +448,6 @@ public class TicTimer extends Thread implements KeyListener {
         progressscroll.getVerticalScrollBar().setValue(TicTimer.progressscroll.getVerticalScrollBar().getMaximum());
         log_stream.println("Session " + TicTimer.session_number + " ended at " + TicTimer.clock_panel.getTimeAsString() + "\n");
         log_stream.close();
-        //Close COM port and stream
-        if(reward_mode == RM_LINK){
-            serialPort.close();
-            try{
-                serialStream.close();
-            }
-            catch(Exception e){
-                System.out.println("Exception: "+e.toString());
-            }
-        }
         //Buttons and Notification
         session_status_panel.setBackground(Color.RED);
         session_status_label.setText("Session status: ended");
@@ -515,10 +517,9 @@ public class TicTimer extends Thread implements KeyListener {
         Thread beep = new Thread(){
             public void run(){
                 try{
-                    reward_notification_label.setBackground(Color.RED);
-                    reward_notification_label.setText("SEND REWARD");
-                    java.awt.Toolkit.getDefaultToolkit().beep();
-                    if(reward_mode == RM_LINK){
+                    if(reward_mode == RM_BUTTON)
+                        java.awt.Toolkit.getDefaultToolkit().beep();
+                    else if(reward_mode == RM_LINK){
                         /* Send a pulse to the serial port (8 bytes long)
                          * The thing is, it's really probably time-based, 
                          * so this may need to increase a bit
@@ -526,6 +527,8 @@ public class TicTimer extends Thread implements KeyListener {
                         for(int i = 0; i < 8; i++)
                             serialStream.write(0);
                     }
+                    reward_notification_label.setBackground(Color.RED);
+                    reward_notification_label.setText("SEND REWARD");
                     //Stay red for 0.5s
                     Thread.sleep(500);
                     reward_notification_label.setBackground(Color.WHITE);
