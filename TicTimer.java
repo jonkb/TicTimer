@@ -36,10 +36,9 @@ public class TicTimer extends Thread implements KeyListener {
     
     //Used by COM link
     final static int TIMEOUT = 2000;
-    final static String appName = "TicTimer_test";
+    final static String appName = "TicTimer";
     final static byte RM_BUTTON = 0;
     final static byte RM_LINK = 1;
-    static Scanner user_in = new Scanner(System.in);
     static byte reward_mode = RM_LINK;
     static SerialPort serialPort = null;
     static OutputStream serialStream = null;
@@ -63,6 +62,9 @@ public class TicTimer extends Thread implements KeyListener {
     static int total_time;
     static Double running_time = new Double(0);
     
+    /* Setup the main JFrame and its components
+     * BTW, this is directly called by TicTimer.run();
+     */
     public void setup_main_window(){
         // setup main window
         main_frame.setSize(500,500);
@@ -88,7 +90,8 @@ public class TicTimer extends Thread implements KeyListener {
         session_time_panel.reset();
         tic_time_panel.reset();
         
-        //add Listener to main frame
+        
+        // add Key Listener to main frame
         main_frame.addKeyListener(this);
         
         // add buttons
@@ -189,10 +192,7 @@ public class TicTimer extends Thread implements KeyListener {
                     serialPort.close();
                     try{
                         serialStream.close();
-                    }
-                    catch(Exception e1){
-                        System.out.println("Exception: "+e1.toString());
-                    }
+                    } catch(Exception e1){ }
                 }
                 //Close the window and the program
                 main_frame.dispose();
@@ -330,56 +330,92 @@ public class TicTimer extends Thread implements KeyListener {
     }
     
     public static void main(String[] args){
-        /* Basic idea from port_test
-         * Establish links and ask about button vs COM
+        if(!setup_links())
+            return;
+        
+        //Start GUI
+        tic_session = new TicTimer();
+        tic_session.start();
+    }
+    /* Setup the links. 
+     * Returns false to quit the program or true to continue.
+     */
+    public static boolean setup_links(){
+        //Variables for JOptionPane dialogues
+        String message = "";
+        String title = "";
+        int choice;
+        /* Basic functionality from port_test
+         * Establish link and ask about button vs COM
          */
-        
-        ArrayList<CommPortIdentifier> cpis = listPorts();
-        ArrayList<CommPortIdentifier> serial_cpis = new ArrayList<CommPortIdentifier>();
         CommPortIdentifier targetPI = null;
-        int num_serial_ports = 0;
+        ArrayList<CommPortIdentifier> serial_cpis = listSerialPorts();
+        int num_serial_ports = serial_cpis.size();
         
-        for(CommPortIdentifier cpi: cpis){
-            if(cpi.getPortType() == 1){ //Serial Port
-                num_serial_ports++;
-                serial_cpis.add(cpi);
-                targetPI = cpi;
-            }
-        }
         if(num_serial_ports == 0){
-            System.out.println("USB serial adapter not detected");
-            if(boolPrompt("Are you using the button instead?"))
+            title = "No Serial COM Devices";
+            message = "USB serial adapter not detected\n";
+                message += "Would you like to continue in button mode?";
+            //BTW, this does work fine even though main_frame isn't visible yet
+            choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.YES_NO_OPTION);
+            if(choice == JOptionPane.YES_OPTION){
                 reward_mode = RM_BUTTON;
-            else/* Quit.
-                 * Actually, I should probably say "plug it in" and scan again
-                 */
-                return;
+            }
+            else if(choice == JOptionPane.NO_OPTION){
+                title = "Try Again";
+                message = "Please plug in the device and press OK";
+                choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.OK_CANCEL_OPTION);
+                if(choice == JOptionPane.OK_OPTION){
+                    //Sleep to give the system a bit of time to register the device
+                    //in case the user pressed OK immediately after plugging it in
+                    try{
+                        Thread.sleep(200);
+                    } catch(Exception e){}
+                    return setup_links(); //Try again
+                }
+                else if(choice == JOptionPane.CANCEL_OPTION)
+                    return false;
+            }
         }
         else if(num_serial_ports == 1){
             /* This should really happen 95% of the time.
              * The other 4.95%, they probably just forgot to plug it in.
              */
-            System.out.println("USB serial adapter detected at "+targetPI.getName());
-            if(!boolPrompt("Is this the right port?")){
-                if(boolPrompt("Would you like to quit?"))
-                    //Again, this could be a "plug it in" prompt
-                    return;
-                System.out.println("Switching to button mode");
-                reward_mode = RM_BUTTON;
+            targetPI = serial_cpis.get(0);
+            title = "Confirm Port";
+            message = "USB serial adapter detected at "+targetPI.getName() + "\n";
+                message += "Is this the right port?";
+            choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.YES_NO_OPTION);
+            if(choice == JOptionPane.NO_OPTION){
+                title = "Continue?";
+                message = "Would you like to continue in button mode?";
+                choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.OK_CANCEL_OPTION);  
+                if(choice == JOptionPane.OK_OPTION){
+                    reward_mode = RM_BUTTON;
+                }
+                else if(choice == JOptionPane.CANCEL_OPTION){
+                    // Quit.
+                    return false;
+                }
             }
-            //If they typed "y", just continue in LINK mode
+            //If yes, continue in LINK mode
         }
         else if(num_serial_ports > 1){
-            System.out.println("Multiple serial devices detected:");
+            title = "Select Port";
+            message = "Multiple serial devices detected:\n";
+            Object[] options = new Object[serial_cpis.size()];
             for(int i=0; i<serial_cpis.size(); i++){
-                System.out.println(i + ": " + serial_cpis.get(i).getName());
+                message += i + ": " + serial_cpis.get(i).getName() + "\n";
+                options[i] = i;
             }
-            System.out.println("Which would you like to use? (type the number displayed before the correct port name)");
-            String res = user_in.next();
+            message += "Which would you like to use? (type the number displayed before the correct port name)";
+            //showInputDialog(Component parentComponent, Object message, String title, int messageType, Icon icon, 
+                //Object[] selectionValues, Object initialSelectionValue)
+            //messageType: ERROR_MESSAGE, INFORMATION_MESSAGE, WARNING_MESSAGE, QUESTION_MESSAGE, or PLAIN_MESSAGE
+            String res = (String) JOptionPane.showInputDialog(main_frame, message, title, JOptionPane.INFORMATION_MESSAGE, null, options, 0);
             int resI = Integer.parseInt(res);
             //Not a valid index
-            if(resI < 0 || resI > serial_cpis.size()){
-                System.out.println("Switching to button mode");
+            if(resI < 0 || resI >= serial_cpis.size()){
                 reward_mode = RM_BUTTON;
             }
             else{
@@ -392,46 +428,20 @@ public class TicTimer extends Thread implements KeyListener {
             try{
                 serialPort = (SerialPort) targetPI.open(appName, TIMEOUT);
                 serialStream = serialPort.getOutputStream();
-                System.out.println("Connection Established");
-            }
-            catch(Exception e){
-                System.out.println("Exception: "+e.toString());
-            }
+            } catch(Exception e){ }
         }
-        
-        //Start GUI
-        tic_session = new TicTimer();
-        tic_session.start();
+        return true;
     }
-    
-    public static ArrayList<CommPortIdentifier> listPorts(){
+    //Look for Devices in Serial Ports
+    public static ArrayList<CommPortIdentifier> listSerialPorts(){
         ArrayList<CommPortIdentifier> cpis = new ArrayList<CommPortIdentifier>();
         CommPortIdentifier cpi = null;
         Enumeration ports = CommPortIdentifier.getPortIdentifiers();
         while(ports.hasMoreElements()){
             cpi = (CommPortIdentifier) ports.nextElement();
-            cpis.add(cpi);
-            System.out.println("Port Name: "+cpi.getName());
-            String type = "";
-            switch(cpi.getPortType()){
-                //http://www.docjava.com/book/cgij/jdoc/constant-values.html#gnu.io.CommPortIdentifierInterface.PORT_PARALLEL
-                case 1:
-                    type = "Serial Port";
-                    break;
-                case 2:
-                    type = "Parallel Port";
-                    break;
-                case 3:
-                    type = "I2C Port";
-                    break;
-                case 4:
-                    type = "RS385 Port";
-                    break;
-                case 5:
-                    type = "Raw Port";
-                    break;
-            }
-            System.out.println("\tPort Type: "+ type);
+            //1: Serial
+            if(cpi.getPortType() == 1)
+                cpis.add(cpi);
         }
         return cpis;
     }
@@ -463,10 +473,7 @@ public class TicTimer extends Thread implements KeyListener {
             java.awt.Toolkit.getDefaultToolkit().beep();
             Thread.sleep(250);
             java.awt.Toolkit.getDefaultToolkit().beep();
-        }
-        catch(Exception e){
-            System.out.println("Exception: "+e.toString());
-        }
+        } catch(Exception e){ }
     }
     
     public static void tic_detected(){
@@ -533,10 +540,7 @@ public class TicTimer extends Thread implements KeyListener {
                     Thread.sleep(500);
                     reward_notification_label.setBackground(Color.WHITE);
                     reward_notification_label.setText("");
-                }
-                catch(Exception e){
-                    System.out.println("Exception: "+e.toString());
-                }
+                } catch(Exception e){ }
             }
         };
         beep.start();
@@ -560,19 +564,5 @@ public class TicTimer extends Thread implements KeyListener {
     }
     public void keyReleased(KeyEvent e) {
         // does nothing
-    }
-    
-    private static boolean boolPrompt(String prompt){
-        String res = "";
-        while(true){
-            System.out.println(prompt + " (y/n)");
-            res = user_in.next().toLowerCase(); //Non-case-sensitive
-            if(res.equals("y"))
-                return true;
-            if(res.equals("n"))
-                return false;
-            System.out.println("Invalid option. Please type 'y' or 'n'.");
-        }
-        //If they typed "y" (or anything alse technically), just continue in LINK mode
     }
 }
