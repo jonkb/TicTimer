@@ -1,0 +1,36 @@
+NewTics subject 1234, session 4, NCR, began at 12:56:16
+
+Tic detected at 00:00:00
+
+Tic detected at 00:00:01
+
+Tic detected at 00:00:05
+
+Tic detected at 00:00:10
+
+Reward dispensed at 00:00:12
+
+Tic detected at 00:00:15
+
+Tic detected at 00:00:22
+
+Tic detected at 00:00:26
+
+Reward dispensed at 00:00:27
+
+Tic detected at 00:00:32
+
+Tic detected at 00:00:38
+
+Reward dispensed at 00:00:39
+
+Tic detected at 00:00:43
+
+Reward dispensed at 00:00:50
+
+10s tic free interval ended at 00:00:53
+
+Reward dispensed at 00:01:00
+
+Session 4 ended at 12:57:17
+

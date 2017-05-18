@@ -1,0 +1,36 @@
+NewTics subject 1234, session 1, baseline, began at 12:51:55
+
+Tic detected at 00:00:01
+
+Tic detected at 00:00:05
+
+Tic detected at 00:00:07
+
+Tic detected at 00:00:08
+
+Tic detected at 00:00:09
+
+Tic detected at 00:00:17
+
+Tic detected at 00:00:25
+
+Tic detected at 00:00:28
+
+Tic detected at 00:00:28
+
+10s tic free interval ended at 00:00:38
+
+Tic detected at 00:00:42
+
+Tic detected at 00:00:42
+
+Tic detected at 00:00:43
+
+10s tic free interval ended at 00:00:53
+
+Tic detected at 00:00:57
+
+Tic detected at 00:00:59
+
+Session 1 ended at 12:52:56
+

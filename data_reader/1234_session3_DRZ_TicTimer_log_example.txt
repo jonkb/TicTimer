@@ -1,0 +1,38 @@
+NewTics subject 1234, session 3, DRZ, began at 12:54:51
+
+Tic detected at 00:00:02
+
+10s tic free interval ended at 00:00:12
+
+Reward dispensed at 00:00:12
+
+Tic detected at 00:00:15
+
+Tic detected at 00:00:16
+
+Tic detected at 00:00:17
+
+Tic detected at 00:00:17
+
+10s tic free interval ended at 00:00:27
+
+Reward dispensed at 00:00:27
+
+Tic detected at 00:00:29
+
+10s tic free interval ended at 00:00:39
+
+Reward dispensed at 00:00:39
+
+Tic detected at 00:00:40
+
+10s tic free interval ended at 00:00:50
+
+Reward dispensed at 00:00:50
+
+10s tic free interval ended at 00:01:00
+
+Reward dispensed at 00:01:00
+
+Session 3 ended at 12:55:51
+

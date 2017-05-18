@@ -1,0 +1,30 @@
+NewTics subject 1234, session 2, verbal, began at 12:53:25
+
+Tic detected at 00:00:01
+
+Tic detected at 00:00:02
+
+Tic detected at 00:00:03
+
+Tic detected at 00:00:09
+
+10s tic free interval ended at 00:00:19
+
+Tic detected at 00:00:24
+
+10s tic free interval ended at 00:00:34
+
+10s tic free interval ended at 00:00:44
+
+Tic detected at 00:00:45
+
+Tic detected at 00:00:46
+
+Tic detected at 00:00:47
+
+Tic detected at 00:00:49
+
+10s tic free interval ended at 00:00:59
+
+Session 2 ended at 12:54:25
+
