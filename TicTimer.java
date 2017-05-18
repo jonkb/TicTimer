@@ -1,14 +1,5 @@
 /**Main thread for the TicTimer program
  * Sets up the main window, including the functionality of its buttons.
- * 
-   Communicating over serial: 
-    //import javax.comm.*;
-    
-    public void serialEvent(SerialPortEvent event) {
-        
-    }
-    //make connection a button instead
-    establish_com();
  */
 import java.awt.*;
 import java.awt.event.*;
@@ -16,6 +7,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.io.*;
 import java.util.*;
+import gnu.io.*;//From RXTX
 
 public class TicTimer extends Thread implements KeyListener {
     static TicTimer tic_session;
@@ -42,6 +34,15 @@ public class TicTimer extends Thread implements KeyListener {
     static JScrollPane progressscroll = new JScrollPane(progress_area);
     static JFileChooser chooser = new JFileChooser();
     
+    //Used by COM link
+    final static int TIMEOUT = 2000;
+    final static String appName = "TicTimer";
+    final static byte RM_BUTTON = 0;
+    final static byte RM_LINK = 1;
+    static byte reward_mode = RM_LINK;
+    static SerialPort serialPort = null;
+    static OutputStream serialStream = null;
+    
     static File NCRSource;
     static File log;
     static Scanner readSource;
@@ -61,12 +62,15 @@ public class TicTimer extends Thread implements KeyListener {
     static int total_time;
     static Double running_time = new Double(0);
     
+    /* Setup the main JFrame and its components
+     * BTW, this is directly called by TicTimer.run();
+     */
     public void setup_main_window(){
         // setup main window
         main_frame.setSize(500,500);
         main_frame.setResizable(false);
         main_frame.getContentPane().setLayout( new FlowLayout(FlowLayout.CENTER,10,10) );
-        // main_frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        main_frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         
         // setup border for panels
         Border etched_border;
@@ -86,7 +90,8 @@ public class TicTimer extends Thread implements KeyListener {
         session_time_panel.reset();
         tic_time_panel.reset();
         
-        //add Listener to main frame
+        
+        // add Key Listener to main frame
         main_frame.addKeyListener(this);
         
         // add buttons
@@ -178,11 +183,20 @@ public class TicTimer extends Thread implements KeyListener {
             public void windowClosing(WindowEvent e){
                 if ( session_running ) {
                     exit_button = JOptionPane.showConfirmDialog(main_frame,"Are you sure you want to exit?","Exit?",JOptionPane.OK_CANCEL_OPTION);
-                    if ( exit_button == JOptionPane.OK_OPTION ) {
-                    JOptionPane.showMessageDialog(main_frame,"OK, exiting now","Exiting",JOptionPane.WARNING_MESSAGE);
-                        System.exit(0);
+                    if(exit_button == JOptionPane.CANCEL_OPTION){
+                        return;
                     }
-                } else { System.exit(0); }
+                }
+                //Close COM port and stream
+                if(reward_mode == RM_LINK){
+                    serialPort.close();
+                    try{
+                        serialStream.close();
+                    } catch(Exception e1){ }
+                }
+                //Close the window and the program
+                main_frame.dispose();
+                System.exit(0);
             }
         };
         main_frame.addWindowListener(mainL);
@@ -250,7 +264,7 @@ public class TicTimer extends Thread implements KeyListener {
         //Choose DRZ file from which to send the rewards
         if(session_type.equals("NCR")){ //if NCR
             chooser.setDialogTitle("Choose a DRZ file");
-            chooser.setSelectedFile(new File(System.getProperty("user.dir"), patid + "_session" + session_number + "_" + possibleValues[2] + "_TicTimer_log.txt"));
+            chooser.setSelectedFile(new File(System.getProperty("user.dir"), patid + "_session*" + "_" + possibleValues[2] + "_TicTimer_log.txt"));
             while ( true ){
                 try {
                     a9 = chooser.showOpenDialog(main_frame);
@@ -315,9 +329,121 @@ public class TicTimer extends Thread implements KeyListener {
         setup_main_window();
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args){
+        if(!setup_links())
+            return;
+        
+        //Start GUI
         tic_session = new TicTimer();
         tic_session.start();
+    }
+    /* Setup the links. 
+     * Returns false to quit the program or true to continue.
+     */
+    public static boolean setup_links(){
+        //Variables for JOptionPane dialogues
+        String message = "";
+        String title = "";
+        int choice;
+        /* Basic functionality from port_test
+         * Establish link and ask about button vs COM
+         */
+        CommPortIdentifier targetPI = null;
+        ArrayList<CommPortIdentifier> serial_cpis = listSerialPorts();
+        int num_serial_ports = serial_cpis.size();
+        
+        if(num_serial_ports == 0){
+            title = "No Serial COM Devices";
+            message = "USB serial adapter not detected\n";
+                message += "Would you like to continue in button mode?";
+            //BTW, this does work fine even though main_frame isn't visible yet
+            choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.YES_NO_OPTION);
+            if(choice == JOptionPane.YES_OPTION){
+                reward_mode = RM_BUTTON;
+            }
+            else if(choice == JOptionPane.NO_OPTION){
+                title = "Try Again";
+                message = "Please plug in the device and press OK";
+                choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.OK_CANCEL_OPTION);
+                if(choice == JOptionPane.OK_OPTION){
+                    //Sleep to give the system a bit of time to register the device
+                    //in case the user pressed OK immediately after plugging it in
+                    try{
+                        Thread.sleep(200);
+                    } catch(Exception e){}
+                    return setup_links(); //Try again
+                }
+                else if(choice == JOptionPane.CANCEL_OPTION)
+                    return false;
+            }
+        }
+        else if(num_serial_ports == 1){
+            /* This should really happen 95% of the time.
+             * The other 4.95%, they probably just forgot to plug it in.
+             */
+            targetPI = serial_cpis.get(0);
+            title = "Confirm Port";
+            message = "USB serial adapter detected at "+targetPI.getName() + "\n";
+                message += "Is this the right port?";
+            choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.YES_NO_OPTION);
+            if(choice == JOptionPane.NO_OPTION){
+                title = "Continue?";
+                message = "Would you like to continue in button mode?";
+                choice = JOptionPane.showConfirmDialog(main_frame,message,title,JOptionPane.OK_CANCEL_OPTION);  
+                if(choice == JOptionPane.OK_OPTION){
+                    reward_mode = RM_BUTTON;
+                }
+                else if(choice == JOptionPane.CANCEL_OPTION){
+                    // Quit.
+                    return false;
+                }
+            }
+            //If yes, continue in LINK mode
+        }
+        else if(num_serial_ports > 1){
+            title = "Select Port";
+            message = "Multiple serial devices detected:\n";
+            Object[] options = new Object[serial_cpis.size()];
+            for(int i=0; i<serial_cpis.size(); i++){
+                message += i + ": " + serial_cpis.get(i).getName() + "\n";
+                options[i] = i;
+            }
+            message += "Which would you like to use? (type the number displayed before the correct port name)";
+            //showInputDialog(Component parentComponent, Object message, String title, int messageType, Icon icon, 
+                //Object[] selectionValues, Object initialSelectionValue)
+            //messageType: ERROR_MESSAGE, INFORMATION_MESSAGE, WARNING_MESSAGE, QUESTION_MESSAGE, or PLAIN_MESSAGE
+            String res = (String) JOptionPane.showInputDialog(main_frame, message, title, JOptionPane.INFORMATION_MESSAGE, null, options, 0);
+            int resI = Integer.parseInt(res);
+            //Not a valid index
+            if(resI < 0 || resI >= serial_cpis.size()){
+                reward_mode = RM_BUTTON;
+            }
+            else{
+                targetPI = serial_cpis.get(resI);
+            }
+        }
+        //Continue and link
+        if(reward_mode == RM_LINK){
+            //Connect
+            try{
+                serialPort = (SerialPort) targetPI.open(appName, TIMEOUT);
+                serialStream = serialPort.getOutputStream();
+            } catch(Exception e){ }
+        }
+        return true;
+    }
+    //Look for Devices in Serial Ports
+    public static ArrayList<CommPortIdentifier> listSerialPorts(){
+        ArrayList<CommPortIdentifier> cpis = new ArrayList<CommPortIdentifier>();
+        CommPortIdentifier cpi = null;
+        Enumeration ports = CommPortIdentifier.getPortIdentifiers();
+        while(ports.hasMoreElements()){
+            cpi = (CommPortIdentifier) ports.nextElement();
+            //1: Serial
+            if(cpi.getPortType() == 1)
+                cpis.add(cpi);
+        }
+        return cpis;
     }
     
     public static void endSession(){
@@ -347,7 +473,7 @@ public class TicTimer extends Thread implements KeyListener {
             java.awt.Toolkit.getDefaultToolkit().beep();
             Thread.sleep(250);
             java.awt.Toolkit.getDefaultToolkit().beep();
-        }catch(Exception e){}
+        } catch(Exception e){ }
     }
     
     public static void tic_detected(){
@@ -377,7 +503,7 @@ public class TicTimer extends Thread implements KeyListener {
     }
     
     /**
-     * send a reward
+     * Send a reward
      */
     public static void send_reward() {
         if(try_reward()){
@@ -390,7 +516,7 @@ public class TicTimer extends Thread implements KeyListener {
         }
     }
     /**
-     * send a reward. Return true if successful
+     * Send a reward. Return true if successful
      */
     public static boolean try_reward(){
         //Tell the user to press the dispense button
@@ -398,19 +524,31 @@ public class TicTimer extends Thread implements KeyListener {
         Thread beep = new Thread(){
             public void run(){
                 try{
+                    if(reward_mode == RM_BUTTON)
+                        java.awt.Toolkit.getDefaultToolkit().beep();
+                    else if(reward_mode == RM_LINK){
+                        /* Send a pulse to the serial port (8 bytes long)
+                         * The thing is, it's really probably time-based, 
+                         * so this may need to increase a bit
+                         */
+                        for(int i = 0; i < 8; i++)
+                            serialStream.write(0);
+                    }
                     reward_notification_label.setBackground(Color.RED);
                     reward_notification_label.setText("SEND REWARD");
-                    java.awt.Toolkit.getDefaultToolkit().beep();
                     //Stay red for 0.5s
                     Thread.sleep(500);
                     reward_notification_label.setBackground(Color.WHITE);
                     reward_notification_label.setText("");
-                }catch(Exception e){}
+                } catch(Exception e){ }
             }
         };
         beep.start();
-        /* Replace this with a function that automatically sends the signal
-        and recieves feedback from the machine */
+        /*
+         * If we ever get feedback from the machine, replace "return true"
+         * with whatever code returns a success or failure boolean
+         * from the machine's sensor
+         */
         return true;
     }
     
