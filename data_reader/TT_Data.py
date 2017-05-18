@@ -1,5 +1,59 @@
-#Actually, maybe we'll just use awk from terminal or make a shell script.
+#Read in a *_TicTimer_log.txt file and generate a report.
+#Should it append that report to the old log file, add it to a new file, or add it to a spreadsheet?
+from sys import argv
 
+#Convert "HH:MM:SS" to seconds since midnight
+def timeStrToNum(timeStr):
+	#Note: I hope a session never straddles midnight
+	parts = timeStr.split(":")
+	seconds = int(parts[0])*3600
+	seconds += int(parts[1])*60
+	seconds += int(parts[2])
+	return seconds
+
+def genReport(log):
+	tics = 0
+	rewards = 0
+	tenSecInts = 0
+	longestInt = 0
+	#Absolute times
+	time0 = 0
+	time1 = 0
+	#Relative times
+	ticTimes = []
+	rewardTimes = []
+	lastTic = 0
+	
+	lines = log.split("\n");
+	for line in lines:
+		parts = line.split(" at ")
+		if(parts[0].indexOf("began") > 0): #Or I could say "first line"
+			time0 = timeStrToNum(parts[1])
+		elif(parts[0].indexOf("ended") > 0):
+			time1 = timeStrToNum(parts[1])
+		elif(parts[0] == "Tic detected"):
+			tics += 1
+			ticTime = timeStrToNum(parts[1])
+			ticTimes.append(ticTime)
+			tic_free = ticTime - lastTic
+			if(tic_free > longestInt):
+				longestInt = tic_free
+			lastTic = ticTime
+		elif(parts[0] == "Reward dispensed"):
+			rewards += 1
+			rewardTimes.append(timeStrToNum(parts[1]))
+		elif(parts[0] == "10s tic free interval ended"):
+			tenSIntervals += 1
+	#Here, do things with the numbers I've collected.
+	#Return something or save something to file. 
+	return
+
+#Load and process the files
+for i in range(1, len(argv)):
+	file = open(argv[i])
+	genReport(file.read())
+
+#Actually, maybe we'll just use awk from terminal or make a shell script.
 """ FROM TICTRAINER (node.js)
 /**Generates a report for the end of a session
 	Takes the text of the session file (data)
