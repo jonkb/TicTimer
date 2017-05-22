@@ -27,9 +27,9 @@ def genReport(log):
 	lines = log.split("\n");
 	for line in lines:
 		parts = line.split(" at ")
-		if(parts[0].indexOf("began") > 0): #Or I could say "first line"
+		if(parts[0].find("began") > 0): #Or I could say "first line"
 			time0 = timeStrToNum(parts[1])
-		elif(parts[0].indexOf("ended") > 0):
+		elif(parts[0].find("ended") > 0):
 			time1 = timeStrToNum(parts[1])
 		elif(parts[0] == "Tic detected"):
 			tics += 1
@@ -46,6 +46,7 @@ def genReport(log):
 			tenSIntervals += 1
 	#Here, do things with the numbers I've collected.
 	#Return something or save something to file. 
+	#print("tics: "+str(tics))
 	return
 
 #Load and process the files
