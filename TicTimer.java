@@ -330,8 +330,11 @@ public class TicTimer extends Thread implements KeyListener {
     }
     
     public static void main(String[] args){
-        if(!setup_links())
-            return;
+        if(!setup_links()){
+            //Close the window and the program
+            main_frame.dispose();
+            System.exit(0); //Closes any other threads
+        }
         
         //Start GUI
         tic_session = new TicTimer();
