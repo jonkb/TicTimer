@@ -26,13 +26,16 @@ def genReport(log):
 	lines = log.split("\n");
 	#Each entry is in the format: [event] at [time]
 	delim = " at "
-	#deal with the first and last lines separately
-	time0 = timeStrToNum(lines[0].split(delim)[1])
-	time1 = timeStrToNum(lines[len(lines)-1].split(delim)[1])
-	for n in range(1, len(lines)-1):
-		line = lines[n]
+	for line in lines:
 		parts = line.split(delim)
-		if(parts[0] == "Tic detected"):
+		
+		if(parts[0].find("ended") > 0):
+			#Note: this catches the "10s ... ended" lines too
+			#That's fine, but it's why there's no else after this if
+			time1 = timeStrToNum(parts[1])
+		if(parts[0].find("began") > 0):
+			time0 = timeStrToNum(parts[1])
+		elif(parts[0] == "Tic detected"):
 			tics += 1
 			ticTime = timeStrToNum(parts[1])
 			ticTimes.append(ticTime)
