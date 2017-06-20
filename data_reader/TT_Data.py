@@ -24,14 +24,15 @@ def genReport(log):
 	lastTic = 0
 	
 	lines = log.split("\n");
-	for line in lines:
-		#Each entry is in the format: [event] at [time]
-		parts = line.split(" at ")
-		if(parts[0].find("began") > 0): #Or I could say "first line"
-			time0 = timeStrToNum(parts[1])
-		elif(parts[0].find("ended") > 0):
-			time1 = timeStrToNum(parts[1])
-		elif(parts[0] == "Tic detected"):
+	#Each entry is in the format: [event] at [time]
+	delim = " at "
+	#deal with the first and last lines separately
+	time0 = timeStrToNum(lines[0].split(delim)[1])
+	time1 = timeStrToNum(lines[len(lines)-1].split(delim)[1])
+	for n in range(1, len(lines)-1):
+		line = lines[n]
+		parts = line.split(delim)
+		if(parts[0] == "Tic detected"):
 			tics += 1
 			ticTime = timeStrToNum(parts[1])
 			ticTimes.append(ticTime)
@@ -39,21 +40,18 @@ def genReport(log):
 			if(tic_free > longestInt):
 				longestInt = tic_free
 			lastTic = ticTime
+		elif(parts[0] == "10s tic free interval ended"):
+			tenSecInts += 1
 		elif(parts[0] == "Reward dispensed"):
 			rewards += 1
 			rewardTimes.append(timeStrToNum(parts[1]))
-		elif(parts[0] == "10s tic free interval ended"):
-			tenSIntervals += 1
-	#Here, do things with the numbers I've collected.
-	#Return something or save something to file. 
-	res = {"tics":tics, "tenSecInts":tenSecInts}
-	res["rewards"] = rewards
+	
+	#Return the numbers I've collected.
+	res = {"tics":tics, "tenSecInts":tenSecInts, "rewards":rewards}
 	res["longestInt"] = longestInt
 	res["length"] = time1 - time0
 	res["ticTimes"] = ticTimes
 	res["rewardTimes"] = rewardTimes
-	
-	#print("tics: "+str(tics))
 	return res
 
 reports = {}
