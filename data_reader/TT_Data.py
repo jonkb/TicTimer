@@ -1,10 +1,9 @@
 #Read in a *_TicTimer_log.txt file and generate a report.
-#Should it append that report to the old log file, add it to a new file, or add it to a spreadsheet?
 from sys import argv
 
 #Convert "HH:MM:SS" to seconds since midnight
 def timeStrToNum(timeStr):
-	#Note: I hope a session never straddles midnight
+	#Note: Assumes a session never straddles midnight
 	parts = timeStr.split(":")
 	seconds = int(parts[0])*3600
 	seconds += int(parts[1])*60
@@ -26,6 +25,7 @@ def genReport(log):
 	
 	lines = log.split("\n");
 	for line in lines:
+		#Each entry is in the format: [event] at [time]
 		parts = line.split(" at ")
 		if(parts[0].find("began") > 0): #Or I could say "first line"
 			time0 = timeStrToNum(parts[1])
