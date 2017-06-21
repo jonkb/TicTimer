@@ -7,12 +7,12 @@ import java.util.*;
 class ClockView extends JPanel implements Runnable {
 
     private JLabel tLabel = new JLabel();
-	static Font bigFont = new Font("arial", Font.BOLD, 18);
+    static Font bigFont = new Font("arial", Font.BOLD, 18);
 
     ClockView() {
         this.setPreferredSize(new Dimension(220,40));
         this.add(tLabel);
-		tLabel.setFont(bigFont);
+        tLabel.setFont(bigFont);
         this.refreshTimeDisplay();
     }
 
@@ -33,17 +33,18 @@ class ClockView extends JPanel implements Runnable {
     }
 
     public void run() {
-	    for (;;) {
-		    this.refreshTimeDisplay();
-		    try {
-		    	Thread.sleep(500);
-		    } catch (Exception e) {}
-	    }
+        for (;;) {
+            this.refreshTimeDisplay();
+            try {
+                Thread.sleep(500);
+            } catch (Exception e) {}
+        }
     }
-	
-	public String getTimeAsString() {
-		return getDigitsAsString(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) + ":"
-                     + getDigitsAsString(Calendar.getInstance().get(Calendar.MINUTE))  + ":"
-                     + getDigitsAsString(Calendar.getInstance().get(Calendar.SECOND));
-	}
+    
+    public String getTimeAsString() {
+        Calendar now = Calendar.getInstance();
+        return getDigitsAsString(now.get(Calendar.HOUR_OF_DAY)) + ":"
+            + getDigitsAsString(now.get(Calendar.MINUTE))  + ":"
+            + getDigitsAsString(now.get(Calendar.SECOND));
+    }
 }

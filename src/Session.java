@@ -25,6 +25,7 @@ class Session extends Thread {
         c1 = start_time;
         c1.add(Calendar.MILLISECOND,300);
         c1.add(Calendar.SECOND,TicTimer.total_time);
+        //Now c1 represents the time of the end of the session
         TicTimer.log_stream.println("NewTics subject " + TicTimer.patid + ", session " + TicTimer.session_number
             + ", " + TicTimer.session_type + ", began at " + TicTimer.clock_panel.getTimeAsString() + "\n");
 
@@ -46,6 +47,9 @@ class Session extends Thread {
             TicTimer.endSession();
     }
     
+    /**Convert to string and add a zero for padding if needed so it's at least 2 digits
+     * Used for time strings in the format 01:23:45
+     */
     protected String getDigitsAsString(int i) {
         String str = Integer.toString(i);
         if (i<10) 

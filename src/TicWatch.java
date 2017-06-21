@@ -45,7 +45,7 @@ class TicWatch extends JPanel implements Runnable {
             if ( time1.after(time2) && run ) {
                 time2.add(Calendar.SECOND,1);
                 timer.add(Calendar.SECOND,1);
-                sec_elapsed = sec_elapsed + 1;
+                sec_elapsed++;
             }
             
             if ( sec_elapsed > 9 ) {
