@@ -111,7 +111,6 @@ public class TicTimer extends Thread implements KeyListener {
             public void actionPerformed(ActionEvent e){
                 if(log.exists()){
                     String message = "The current log file already exists. If you continue, you will append to that log file";
-                    message += "\nIf this is a DRZ run to be used later for NCR, it could cause errors";
                     message += "\nTo avoid modifying the existing file, go back to setup and choose a new filename";
                     int continue_choice = JOptionPane.showConfirmDialog(main_frame, message, "WARNING: Appending",
                         JOptionPane.OK_CANCEL_OPTION,JOptionPane.WARNING_MESSAGE);
@@ -296,6 +295,9 @@ public class TicTimer extends Thread implements KeyListener {
                     }
                     catch (NumberFormatException e) {}
                 }
+                //This makes it read the last session if multiple sessions are in one DRZ log
+                else if(line.indexOf("began at ") > 0)
+                    ncrTimes.clear();
             }
             readSource.close();
         }
