@@ -285,11 +285,12 @@ public class TicTimer extends Thread implements KeyListener {
             
             while(readSource.hasNextLine()) {
                 String line = readSource.nextLine();
-                if(line.length() > 31 && line.substring(0, 31).equals("10s tic free interval ended at ")){
+                if(line.length() > 30 && line.contains("s tic free interval ended at ")){
                     try {
-                        int h = Integer.parseInt(line.substring(31, 33));
-                        int m = Integer.parseInt(line.substring(34, 36));
-                        int s = Integer.parseInt(line.substring(37, 39));
+                        int colon_i = line.indexOf(":");
+                        int h = Integer.parseInt(line.substring(colon_i-2, colon_i));
+                        int m = Integer.parseInt(line.substring(colon_i+1, colon_i+3));
+                        int s = Integer.parseInt(line.substring(colon_i+4, colon_i+6));
                         Timestamp rewardTime = new Timestamp(h, m, s);
                         ncrTimes.add(rewardTime);
                     }
@@ -493,15 +494,15 @@ public class TicTimer extends Thread implements KeyListener {
         }
     }
     
-    public static void tenIEnd(){
+    public static void tenIEnd(int tic_free_interval){
         // JOptionPane.showMessageDialog(main_frame,"REWARD!!!","Reward",JOptionPane.WARNING_MESSAGE);
         try {
             Thread.sleep(100);
         } catch (Exception e) {}
         
-        progress_area.append("No tics for 10 seconds at " + session_time_panel.getTimeAsString() + "\n");
-        log_stream.println("10s tic free interval ended at " + session_time_panel.getTimeAsString() + "\n");
         
+        progress_area.append("No tics for " + tic_free_interval + " seconds at " + session_time_panel.getTimeAsString() + "\n");
+        log_stream.println(tic_free_interval + "s tic free interval ended at " + session_time_panel.getTimeAsString() + "\n");
         if(session_type.equals("DRZ")){
             send_reward();
         }

@@ -8,6 +8,7 @@ import java.util.*;
 
 class TicWatch extends JPanel implements Runnable {
     Integer sec_elapsed = new Integer(0);
+    Integer tic_free_interval = new Integer(10);
     Calendar time1;
     Calendar time2;
     Calendar timer = Calendar.getInstance();
@@ -48,8 +49,8 @@ class TicWatch extends JPanel implements Runnable {
                 sec_elapsed++;
             }
             
-            if ( sec_elapsed > 9 ) {
-                TicTimer.tenIEnd();
+            if ( sec_elapsed >= tic_free_interval ) {
+                TicTimer.tenIEnd(tic_free_interval);
                 this.reset();
             }
             
