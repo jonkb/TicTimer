@@ -1,6 +1,8 @@
 PROJECT TITLE:	TicTimer
-A program used in the KJB lab for the NewTics study.
+A program used in the KJB lab (https://blacklab.wustl.edu) for the NewTics study.
 Now with COM link capabilities to send chips automatically.
+See full description here: https://doi.org/10.12688/f1000research.12327.2
+In the Black lab, TicTimer has been supplanted by TicTimer Web (https://github.com/jonkb/TicTrainer-node), described here (https://doi.org/10.12688/f1000research.26347.2).
 
 USING THE PROGRAM:
 Before it can be run, rxtx for java must be installed on the computer. 
